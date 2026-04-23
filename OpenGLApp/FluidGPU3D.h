@@ -59,8 +59,8 @@ private:
 
 	virtual void extrapolate() override {
 		extrapolateShader.use();
-		glBindImageTexture(0, velocityTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-		glDispatchCompute((sizeX + 15) / 16, (sizeY + 15) / 16, 1);
+		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
 
