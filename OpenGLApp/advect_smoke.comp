@@ -51,7 +51,6 @@ void main() {
 
     float currentS = texelFetch(smokeTexture, id, 0).r;
 
-    // Only advect interior cells and non-obstacles
     if (all(greaterThanEqual(id, ivec3(1))) && all(lessThan(id, gridSize - 1))) {
         
         float s = imageLoad(freeSpaceImage, id).r;

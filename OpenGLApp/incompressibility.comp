@@ -2,9 +2,9 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-layout(rgba32f, binding = 0) uniform image2D velocityImage;
-layout(r32f, binding = 1) uniform image2D freeSpaceImage;
-layout(r32f, binding = 2) uniform image2D pressureImage;
+layout(rgba32f, binding = 0) uniform image3D velocityImage;
+layout(r32f, binding = 1) uniform image3D freeSpaceImage;
+layout(r32f, binding = 2) uniform image3D pressureImage;
 
 uniform float pressureScaling;
 uniform float overrelaxation;
@@ -12,7 +12,7 @@ uniform int pass; // 8 pass: 0-7
 uniform ivec3 gridSize;
 
 void main() {
-    ivec3 id = ivec2(gl_GlobalInvocationID.xyz);
+    ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
 
     // bound check
     if (id.x < 1 || id.y < 1 || id.z < 1 || id.x >= gridSize.x - 1 || id.y >= gridSize.y - 1 || id.z >= gridSize.z - 1) return;
@@ -30,11 +30,11 @@ void main() {
     float sTop    = imageLoad(freeSpaceImage, id + ivec3(0, 1, 0)).r;
     float sBack   = imageLoad(freeSpaceImage, id - ivec3(0, 0, 1)).r;
     float sFront  = imageLoad(freeSpaceImage, id + ivec3(0, 0, 1)).r;
-    float sum = sLeft + sRight + sBottom + sTop;
+    float sum = sLeft + sRight + sBottom + sTop + sBack + sFront;
 
     if (sum <= 0.05) return;
 
-    loat uRight = imageLoad(velocityImage, id + ivec3(1, 0, 0)).r;
+    float uRight = imageLoad(velocityImage, id + ivec3(1, 0, 0)).r;
     float uLeft = imageLoad(velocityImage, id).r;
     float vTop = imageLoad(velocityImage, id + ivec3(0, 1, 0)).g;
     float vBottom = imageLoad(velocityImage, id).g;
@@ -64,7 +64,7 @@ void main() {
 
     vec4 velT = imageLoad(velocityImage, id + ivec3(0, 1, 0));
     imageStore(velocityImage, id + ivec3(0, 1, 0), vec4(velT.r, vTop, velT.ba));
-    
+
     vec4 velF = imageLoad(velocityImage, id + ivec3(0, 0, 1));
     imageStore(velocityImage, id + ivec3(0, 0, 1), vec4(velF.rg, wFront, velF.a));
 }

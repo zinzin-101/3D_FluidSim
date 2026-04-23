@@ -35,6 +35,9 @@
     <ClInclude Include="FluidGPU.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FluidGPU3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="smoke.vert" />

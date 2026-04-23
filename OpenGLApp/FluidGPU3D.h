@@ -103,6 +103,29 @@ private:
 		std::swap(smokeTexture, newSmokeTexture);
 	}
 
+	virtual void setInitialObstacle(float dt, bool reset) {
+		setObstacleShader.use();
+
+		float centerX = (sizeX * spacing) * 0.5f;
+		float centerY = spacing * 0.5f;
+		float centerZ = (sizeZ * spacing) * 0.5f;
+
+		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
+		setObstacleShader.setFloat("radius", obstacleRadius);
+		setObstacleShader.setFloat("spacing", spacing);
+		setObstacleShader.setBool("isReset", reset);
+		setObstacleShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
+		setObstacleShader.setFloat("smokeColor", 1.0f);
+
+		// Bind 3D Textures
+		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
+		glBindImageTexture(2, smokeTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
+
+		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	}
+
 public:
 	FluidGPU3D(float density, int width, int height, int depth, float spacing, float obstacleRadius) :
 		Fluid(density, width, height, spacing, obstacleRadius, depth + BORDER_SIZE),
@@ -190,9 +213,12 @@ public:
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+		setInitialObstacle(1.0f / 60.0f, false);
 	}
 
 	virtual void update(float dt, float gravity, int iterations) override {
+
 		integrate(dt, gravity);
 		solveIncompressibility(dt, iterations);
 
@@ -201,38 +227,6 @@ public:
 		advectSmoke(dt);
 
 		frameCount++;
-	}
-
-	virtual void setObstacle(float dt, float x, float y, bool reset) override {
-		std::swap(x, y);
-		float vx = 0.0f;
-		float vy = 0.0f;
-		if (!reset) {
-			vx = (x - obstacleX) / dt;
-			vy = (y - obstacleY) / dt;
-		}
-
-		obstacleX = x;
-		obstacleY = y;
-
-		setObstacleShader.use();
-		setObstacleShader.setVec2("mousePos", x, y);
-		setObstacleShader.setVec2("mouseVel", vx, vy);
-		setObstacleShader.setFloat("radius", obstacleRadius);
-		setObstacleShader.setFloat("spacing", spacing);
-		setObstacleShader.setBool("isReset", reset);
-		setObstacleShader.setIVec2("gridSize", sizeX, sizeY);
-
-		//float smokeColor = 0.5f + 0.5f * sin((float)frameCount * 2.0f);
-		float smokeColor = 0.0f;
-		setObstacleShader.setFloat("smokeColor", smokeColor);
-
-		glBindImageTexture(0, velocityTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-		glBindImageTexture(1, freeSpaceTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
-		glBindImageTexture(2, smokeTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
-
-		glDispatchCompute((sizeX + 15) / 16, (sizeY + 15) / 16, 1);
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
 
 	unsigned int getSmokeTexture() const {
@@ -245,5 +239,9 @@ public:
 
 	unsigned int getFreeSpaceTexture() const {
 		return freeSpaceTexture;
+	}
+
+	int getSizeZ() const {
+		return sizeZ;
 	}
 };

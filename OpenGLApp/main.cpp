@@ -5,8 +5,8 @@
 #include <shader.h>
 #include <filesystem.h>
 
-#include "Fluid.h"
-#include "FluidGPU.h"
+#include "ComputeShader.h"
+#include "FluidGPU3D.h"
 #include <camera.h>
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -46,14 +46,12 @@ float mouseX = 0.0f;
 float mouseY = 0.0f;
 float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
-class Fluid;
-class FluidGPU;
-Fluid* fluidPtr = nullptr;
+FluidGPU3D* fluidPtr = nullptr;
 //FluidGPU* fluidPtr = nullptr;
 bool isMouseDown = false;
 bool isRightMouseDown = false;
 bool showFreeSpace = false;
-bool useGPU = true;
+int z = 64;
 
 
 // rendering
@@ -67,6 +65,8 @@ std::map<unsigned, bool> keyDownMap;
 bool getKeyDown(GLFWwindow* window, unsigned int key);
 
 Camera camera;
+
+void get2DTextureSliceFrom3DTexture(ComputeShader& sliceShader, int z, int sizeX, int sizeY, int sizeZ, unsigned int source, unsigned int destination);
 
 int main() {
 	glfwInit();
@@ -107,10 +107,8 @@ int main() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	//Fluid fluid = Fluid(DENSITY, 512, 512, SPACING, OBSTACLE_RADIUS / 4.0f);
-	Fluid fluid = Fluid(DENSITY, 512, 512, SPACING, OBSTACLE_RADIUS);
-	FluidGPU fluidGPU = FluidGPU(DENSITY, 512, 512, SPACING, OBSTACLE_RADIUS);
-	fluidPtr = &fluidGPU;
+	FluidGPU3D fluid(DENSITY, 128, 128, 128, SPACING, OBSTACLE_RADIUS);
+	fluidPtr = &fluid;
 
 	// setup quad
 	float quadVertices[] = {
@@ -153,11 +151,13 @@ int main() {
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, fluid.getSizeX(), fluid.getSizeY(), 0, GL_RED, GL_FLOAT, NULL);
+	glTexStorage2D(GL_TEXTURE_2D, 1, GL_R32F, fluid.getSizeX(), fluid.getSizeY());
 
 	Shader shader = Shader("smoke.vert", "smoke.frag");
 	shader.use();
 	shader.setInt("smokeTexture", 0);
+
+	ComputeShader sliceShader = ComputeShader("slice.comp");
 
 	while (!glfwWindowShouldClose(window)) {
 		processInput(window);
@@ -166,45 +166,23 @@ int main() {
 		deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
 
-		if (useGPU) {
-			fluidPtr = &fluidGPU;
-			fluidPtr->update(1.0f / 60.0f, -98.1f, 40);
-		}
-		else {
-			fluidPtr = &fluid;
-			fluidPtr->update(1.0f / 60.0f, -9.81f, 40);
-		}
+		fluidPtr->update(1.0f / 30.0f, 98.1f, 40);
 
 		// update
-		if (isMouseDown) {
-			fluidPtr->setObstacle(1.0f / 60.0f, mouseX, mouseY, isRightMouseDown);
-		}
+		//if (isMouseDown) {
+		//	fluidPtr->setObstacle(1.0f / 60.0f, mouseX, mouseY, isRightMouseDown);
+		//}
 
-		// render
+		// render	
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		//glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		//glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		//glBindTexture(GL_TEXTURE_2D, smokeTexture);
-		//glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fluid.getSizeX(), fluid.getSizeY(), GL_RED, GL_FLOAT, fluid.getMaterialData());
-		switch (useGPU) {
-			case true:
-				glActiveTexture(GL_TEXTURE0);
-				if (showFreeSpace) {
-					glBindTexture(GL_TEXTURE_2D, fluidGPU.getFreeSpaceTexture());
-				}
-				else {
-					glBindTexture(GL_TEXTURE_2D, fluidGPU.getSmokeTexture());
-				}
-				break;
+		get2DTextureSliceFrom3DTexture(sliceShader, z, fluid.getSizeX(), fluid.getSizeY(), fluid.getSizeZ(), fluid.getSmokeTexture(), smokeTexture);
 
-			case false:
-				glBindTexture(GL_TEXTURE_2D, smokeTexture);
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, fluid.getSizeX(), fluid.getSizeY(), GL_RED, GL_FLOAT, fluid.getMaterialData());
-				break;
-		}
-
-		//glBindTexture(GL_TEXTURE_2D, fluid.getVelocityTexture());
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, smokeTexture);
 
 		shader.use();
 		//glm::mat4 projection = glm::ortho(0.0f, (float)WIDTH, 0.0f, (float)HEIGHT);
@@ -212,6 +190,7 @@ int main() {
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 1000.0f);
 		glm::mat4 model(1.0f);
+		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
 		shader.setMat4("view", view);
 		shader.setMat4("projection", projection);
 		shader.setMat4("model", model);
@@ -231,8 +210,7 @@ int main() {
 			fps = frameNum / timeElapsed;
 			timeElapsed = 0.0f;
 			frameNum = 0;
-			std::string mode = useGPU ? "GPU" : "CPU";
-			std::cout << "FPS: " << fps << " mode: " << mode << std::endl;
+			std::cout << "FPS: " << fps << std::endl;
 		}
 
 		glfwSwapBuffers(window);
@@ -295,10 +273,6 @@ void processInput(GLFWwindow* window) {
 		showFreeSpace = !showFreeSpace;
 	}
 
-	if (getKeyDown(window, GLFW_KEY_G)) {
-		useGPU = !useGPU;
-	}
-
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -311,6 +285,13 @@ void processInput(GLFWwindow* window) {
 		camera.ProcessKeyboard(UP, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		camera.ProcessKeyboard(DOWN, deltaTime);
+
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		z += 1;
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		z -= 1;
+	z = glm::clamp(z, 0, 127);
+	std::cout << "z: " << z << std::endl;
 }
 
 void toggleFullscreen(GLFWwindow* window) {
@@ -366,4 +347,19 @@ glm::vec3 getSciColor(float val, float minVal, float maxVal) {
 	}
 
 	return glm::vec3(r, g, b);
+}
+
+void get2DTextureSliceFrom3DTexture(ComputeShader& sliceShader, int z, int sizeX, int sizeY, int sizeZ, unsigned int source, unsigned int destination) {
+	sliceShader.use();
+	sliceShader.setInt("index", z);
+	sliceShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_3D, source);
+	sliceShader.setInt("tex3D", 0);
+
+	glBindImageTexture(0, destination, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
+
+	glDispatchCompute((sizeX + 15) / 16, (sizeY + 15) / 16, 1);
+	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }

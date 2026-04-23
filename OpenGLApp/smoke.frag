@@ -8,7 +8,8 @@ void main() {
     float density = texture(smokeTexture, TexCoords).r;
 
     vec3 smokeColor = vec3(1.0, 1.0, 1.0);
-    FragColor = vec4(smokeColor, 1.0 -density); 
+    //FragColor = vec4(smokeColor, 1.0 - density); 
+    FragColor = vec4(smokeColor, density);
     //FragColor = vec4(TexCoords, 1.0, 1.0);
     //FragColor = vec4(0.0, 1.0, 0.0, 1.0);
     //FragColor = vec4(texture(smokeTexture, TexCoords).rg, 0.0, 1.0);

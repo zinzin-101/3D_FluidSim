@@ -145,6 +145,7 @@
     <ClInclude Include="Fluid.h" />
     <ClInclude Include="FluidConfig.h" />
     <ClInclude Include="FluidGPU.h" />
+    <ClInclude Include="FluidGPU3D.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="smoke.frag" />

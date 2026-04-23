@@ -1,0 +1,20 @@
+#version 430 core
+
+layout(local_size_x = 16, local_size_y = 16) in;
+
+uniform sampler3D tex3D; 
+layout(r32f, binding = 0) uniform image2D result;
+
+uniform int index;
+uniform ivec3 gridSize;
+
+void main() {
+    ivec2 id2D = ivec2(gl_GlobalInvocationID.xy);
+
+    if (id2D.x >= gridSize.x || id2D.y >= gridSize.y) return;
+
+    ivec3 id3D = ivec3(id2D.x, id2D.y, index);
+    float value = texelFetch(tex3D, id3D, 0).r;
+
+    imageStore(result, id2D, vec4(value));
+}

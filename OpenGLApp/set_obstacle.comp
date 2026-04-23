@@ -1,46 +1,46 @@
 #version 430 core
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-layout(rgba32f, binding = 0) uniform image2D velocityImage;
-layout(r32f, binding = 1) uniform image2D freeSpaceImage;
-layout(r32f, binding = 2) uniform image2D smokeImage;
+layout(rgba32f, binding = 0) uniform image3D velocityImage;
+layout(r32f, binding = 1) uniform image3D freeSpaceImage;
+layout(r32f, binding = 2) uniform image3D smokeImage;
 
-uniform vec2 mousePos;    
-uniform vec2 mouseVel;
+uniform vec3 obstaclePos;     
 uniform float radius;     
 uniform float spacing;    
 uniform float smokeColor; 
 uniform bool isReset;     
-uniform ivec2 gridSize;
+uniform ivec3 gridSize;
 
 void main() {
-    ivec2 id = ivec2(gl_GlobalInvocationID.xy);
+    ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
 
-    if (id.x >= gridSize.x - 1 || id.y >= gridSize.y - 1 || id.x < 1 || id.y < 1) return;
-
-    imageStore(freeSpaceImage, id, vec4(1.0));
+    if (any(greaterThanEqual(id, gridSize - 1)) || any(lessThan(id, ivec3(1)))) return;
 
     if (isReset) {
         imageStore(freeSpaceImage, id, vec4(1.0));
     }
 
-    vec2 cellPos = (vec2(id) + 0.5) * spacing;
-    float dist = distance(cellPos, mousePos);
+    vec3 cellPos = (vec3(id) + 0.5) * spacing;
+    float dist = distance(cellPos, obstaclePos);
 
     if (dist < radius) {
-
         imageStore(freeSpaceImage, id, vec4(0.0));
         
         imageStore(smokeImage, id, vec4(smokeColor));
 
-        imageStore(velocityImage, id, vec4(mouseVel.x, mouseVel.y, 0.0, 1.0));
-        
-        vec4 rightVel = imageLoad(velocityImage, id + ivec2(1, 0));
-        rightVel.r = mouseVel.x;
-        imageStore(velocityImage, id + ivec2(1, 0), rightVel);
-        
-        vec4 topVel = imageLoad(velocityImage, id + ivec2(0, 1));
-        topVel.g = mouseVel.y;
-        imageStore(velocityImage, id + ivec2(0, 1), topVel);
+        imageStore(velocityImage, id, vec4(0.0, 0.0, 0.0, 1.0));
+
+        vec4 velR = imageLoad(velocityImage, id + ivec3(1, 0, 0));
+        velR.r = 0.0;
+        imageStore(velocityImage, id + ivec3(1, 0, 0), velR);
+
+        vec4 velT = imageLoad(velocityImage, id + ivec3(0, 1, 0));
+        velT.g = 0.0;
+        imageStore(velocityImage, id + ivec3(0, 1, 0), velT);
+
+        vec4 velF = imageLoad(velocityImage, id + ivec3(0, 0, 1));
+        velF.b = 0.0;
+        imageStore(velocityImage, id + ivec3(0, 0, 1), velF);
     }
 }

@@ -234,7 +234,7 @@ public:
 		smoke = std::vector<float>(totalCells);
 		newSmoke = std::vector<float>(totalCells);
 
-		std::fill(smoke.begin(), smoke.end(), 1.0f);
+		std::fill(smoke.begin(), smoke.end(), 0.0f);
 		std::fill(freeSpace.begin(), freeSpace.end(), 1.0f);
 
 		frameCount = 0;
