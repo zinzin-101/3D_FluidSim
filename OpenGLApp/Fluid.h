@@ -217,9 +217,14 @@ protected:
 
 
 public:
-	Fluid(float density, int width, int height, float spacing, float obstacleRadius) :
+	Fluid(float density, int width, int height, float spacing, float obstacleRadius, int sizeZ = 0) :
 		density(density), sizeX(width + BORDER_SIZE), sizeY(height + BORDER_SIZE), spacing(spacing), obstacleRadius(obstacleRadius) {
 		totalCells = sizeX * sizeY;
+
+		if (sizeZ > 0) {
+			totalCells *= sizeZ;
+		}
+
 		uSpeed = std::vector<float>(totalCells);
 		vSpeed = std::vector<float>(totalCells);
 		newSpeedU = std::vector<float>(totalCells);
