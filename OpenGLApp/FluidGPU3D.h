@@ -41,17 +41,17 @@ private:
 		float pressureScaling = density * spacing / dt;
 		incompressibilityShader.setFloat("pressureScaling", pressureScaling);
 		incompressibilityShader.setFloat("overrelaxation", 1.9f);
-		incompressibilityShader.setIVec2("gridSize", sizeX, sizeY);
+		incompressibilityShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
 
-		glBindImageTexture(0, velocityTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-		glBindImageTexture(1, freeSpaceTexture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
-		glBindImageTexture(2, pressureTexture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32F);
+		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+		glBindImageTexture(2, pressureTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
 
-		// using 4-color Gauss-Seidel method
+		// using 8-color Gauss-Seidel method
 		for (int i = 0; i < iterations; i++) {
-			for (int j = 0; j < 4; j++) {
+			for (int j = 0; j < 8; j++) {
 				incompressibilityShader.setInt("pass", j);
-				glDispatchCompute((sizeX + 15) / 16, (sizeY + 15) / 16, 1);
+				glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
 				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 			}
 		}
