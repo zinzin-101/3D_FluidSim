@@ -69,13 +69,13 @@ private:
 		advectVelocityShader.setFloat("dt", dt);
 		advectVelocityShader.setFloat("spacing", spacing);
 
-		glBindImageTexture(0, newVelocityTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		glBindImageTexture(0, newVelocityTexture, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_RGBA32F);
 
 		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, velocityTexture);
+		glBindTexture(GL_TEXTURE_3D, velocityTexture);
 		advectVelocityShader.setInt("velocityTexture", 2);
 
-		glDispatchCompute((sizeX + 15) / 16, (sizeY + 15) / 16, 1);
+		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		std::swap(velocityTexture, newVelocityTexture);
