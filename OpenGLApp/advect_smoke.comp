@@ -1,79 +1,74 @@
 #version 430 core
 
-layout(local_size_x = 16, local_size_y = 16) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-uniform sampler2D smokeTexture;   
-uniform sampler2D velocityTexture; 
+uniform sampler3D smokeTexture;    
+uniform sampler3D velocityTexture; 
 
-layout(r32f, binding = 0) uniform image2D smokeWrite;
-layout(r32f, binding = 1) uniform image2D freeSpaceImage;
+layout(r32f, binding = 0) uniform image3D smokeWrite;
+layout(r32f, binding = 1) uniform image3D freeSpaceImage;
 
 uniform float dt;
 uniform float spacing;
-uniform ivec2 gridSize;
+uniform ivec3 gridSize;
 
-float sampleField(sampler2D tex, vec2 worldPos, int fieldType, float spacing, ivec2 gridSize) {
+float sampleSmoke3D(sampler3D tex, vec3 worldPos, float spacing, ivec3 gridSize) {
     float spacing1 = 1.0 / spacing;
     
-    float dx = 0.0;
-    float dy = 0.0;
-    if (fieldType == 0) dy = 0.5 * spacing;      // U is at (x, y+0.5)
-    else if (fieldType == 1) dx = 0.5 * spacing; // V is at (x+0.5, y)
-    else { dx = 0.5 * spacing; dy = 0.5 * spacing; } // Smoke is at (x+0.5, y+0.5)
+    vec3 offset = vec3(0.5 * spacing);
 
-    float gx = (worldPos.x - dx) * spacing1;
-    float gy = (worldPos.y - dy) * spacing1;
+    vec3 g = (worldPos - offset) * spacing1;
+    ivec3 i0 = ivec3(floor(g));
+    vec3 f = g - vec3(i0);
 
-    int x0 = int(floor(gx));
-    int y0 = int(floor(gy));
-    float tx = gx - float(x0);
-    float ty = gy - float(y0);
+    i0 = clamp(i0, ivec3(0), gridSize - 1);
+    ivec3 i1 = min(i0 + 1, gridSize - 1);
 
-    x0 = clamp(x0, 0, gridSize.x - 1);
-    y0 = clamp(y0, 0, gridSize.y - 1);
-    int x1 = min(x0 + 1, gridSize.x - 1);
-    int y1 = min(y0 + 1, gridSize.y - 1);
+    float v000 = texelFetch(tex, i0, 0).r;
+    float v100 = texelFetch(tex, ivec3(i1.x, i0.y, i0.z), 0).r;
+    float v010 = texelFetch(tex, ivec3(i0.x, i1.y, i0.z), 0).r;
+    float v110 = texelFetch(tex, ivec3(i1.x, i1.y, i0.z), 0).r;
+    float v001 = texelFetch(tex, ivec3(i0.x, i0.y, i1.z), 0).r;
+    float v101 = texelFetch(tex, ivec3(i1.x, i0.y, i1.z), 0).r;
+    float v011 = texelFetch(tex, ivec3(i0.x, i1.y, i1.z), 0).r;
+    float v111 = texelFetch(tex, i1, 0).r;
 
-    vec4 f00 = texelFetch(tex, ivec2(x0, y0), 0);
-    vec4 f10 = texelFetch(tex, ivec2(x1, y0), 0);
-    vec4 f01 = texelFetch(tex, ivec2(x0, y1), 0);
-    vec4 f11 = texelFetch(tex, ivec2(x1, y1), 0);
-
-    float v00, v10, v01, v11;
-    if (fieldType == 0) { v00=f00.r; v10=f10.r; v01=f01.r; v11=f11.r; }
-    else if (fieldType == 1) { v00=f00.g; v10=f10.g; v01=f01.g; v11=f11.g; }
-    else { v00=f00.r; v10=f10.r; v01=f01.r; v11=f11.r; }
-
-    return mix(mix(v00, v10, tx), mix(v01, v11, tx), ty);
-}
-void main() {
-    ivec2 id = ivec2(gl_GlobalInvocationID.xy);
+    float x00 = mix(v000, v100, f.x);
+    float x10 = mix(v010, v110, f.x);
+    float x01 = mix(v001, v101, f.x);
+    float x11 = mix(v011, v111, f.x);
     
-    if (id.x >= gridSize.x || id.y >= gridSize.y) return;
+    float y0 = mix(x00, x10, f.y);
+    float y1 = mix(x01, x11, f.y);
 
-    float newS = texelFetch(smokeTexture, id, 0).r;
+    return mix(y0, y1, f.z);
+}
 
-    if (id.x >= 1 && id.y >= 1 && id.x < gridSize.x - 1 && id.y < gridSize.y - 1) {
+void main() {
+    ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
+    
+    if (any(greaterThanEqual(id, gridSize))) return;
+
+    float currentS = texelFetch(smokeTexture, id, 0).r;
+
+    // Only advect interior cells and non-obstacles
+    if (all(greaterThanEqual(id, ivec3(1))) && all(lessThan(id, gridSize - 1))) {
         
         float s = imageLoad(freeSpaceImage, id).r;
         if (s >= 0.05) {
             float spacing2 = 0.5 * spacing;
+            float u = 0.5 * (texelFetch(velocityTexture, id, 0).r + texelFetch(velocityTexture, id + ivec3(1,0,0), 0).r);
+            float v = 0.5 * (texelFetch(velocityTexture, id, 0).g + texelFetch(velocityTexture, id + ivec3(0,1,0), 0).g);
+            float w = 0.5 * (texelFetch(velocityTexture, id, 0).b + texelFetch(velocityTexture, id + ivec3(0,0,1), 0).b);
             
-            float u = 0.5 * (
-                texelFetch(velocityTexture, id, 0).r +
-                texelFetch(velocityTexture, id + ivec2(1,0), 0).r
-            );
-            float v = 0.5 * (
-                texelFetch(velocityTexture, id, 0).g +
-                texelFetch(velocityTexture, id + ivec2(0,1), 0).g
-            );
+            vec3 vAvg = vec3(u, v, w);
             
-            vec2 pos = vec2(id) * spacing + vec2(spacing2);
-            vec2 backPos = pos - dt * vec2(u, v);
+            vec3 pos = (vec3(id) + 0.5) * spacing;
+            vec3 backPos = pos - dt * vAvg;
             
-            newS = sampleField(smokeTexture, backPos, 2, spacing, gridSize);
+            currentS = sampleSmoke3D(smokeTexture, backPos, spacing, gridSize);
         }
     }
 
-    imageStore(smokeWrite, id, vec4(newS));
+    imageStore(smokeWrite, id, vec4(currentS));
 }

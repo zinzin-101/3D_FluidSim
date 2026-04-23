@@ -87,17 +87,17 @@ private:
 		advectSmokeShader.setFloat("spacing", spacing);
 
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, velocityTexture);
+		glBindTexture(GL_TEXTURE_3D, velocityTexture);
 		advectSmokeShader.setInt("velocityTexture", 0);
 
 		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, smokeTexture);
+		glBindTexture(GL_TEXTURE_3D, smokeTexture);
 		advectSmokeShader.setInt("smokeTexture", 1);
 
-		glBindImageTexture(0, newSmokeTexture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
-		glBindImageTexture(1, freeSpaceTexture, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+		glBindImageTexture(0, newSmokeTexture, 0, GL_TRUE, 0, GL_WRITE_ONLY, GL_R32F);
+		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
 
-		glDispatchCompute((sizeX + 15) / 16, (sizeY + 15) / 16, 1);
+		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		std::swap(smokeTexture, newSmokeTexture);
