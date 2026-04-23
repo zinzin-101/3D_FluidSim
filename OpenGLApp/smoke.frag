@@ -1,0 +1,16 @@
+#version 330 core
+out vec4 FragColor;
+in vec2 TexCoords;
+
+uniform sampler2D smokeTexture;
+
+void main() {
+    float density = texture(smokeTexture, TexCoords).r;
+
+    vec3 smokeColor = vec3(1.0, 1.0, 1.0);
+    FragColor = vec4(smokeColor, 1.0 -density); 
+    //FragColor = vec4(TexCoords, 1.0, 1.0);
+    //FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+    //FragColor = vec4(texture(smokeTexture, TexCoords).rg, 0.0, 1.0);
+    //FragColor = vec4(density, density, density, 1.0);
+}
