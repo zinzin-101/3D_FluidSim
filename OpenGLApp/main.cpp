@@ -107,6 +107,9 @@ int main() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+
 	FluidGPU3D fluid(DENSITY, 128, 128, 128, SPACING, OBSTACLE_RADIUS);
 	fluidPtr = &fluid;
 

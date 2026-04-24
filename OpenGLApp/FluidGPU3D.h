@@ -106,11 +106,6 @@ private:
 	virtual void setInitialObstacle(float dt, bool reset) {
 		setObstacleShader.use();
 
-		float centerX = (sizeX * spacing) * 0.5f;
-		float centerY = spacing * 0.5f;
-		float centerZ = (sizeZ * spacing) * 0.5f;
-
-		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
 		setObstacleShader.setFloat("radius", obstacleRadius);
 		setObstacleShader.setFloat("spacing", spacing);
 		setObstacleShader.setBool("isReset", reset);
@@ -122,8 +117,16 @@ private:
 		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
 		glBindImageTexture(2, smokeTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
 
-		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		for (float x = -0.5f; x <= 0.5f; x += 0.5f) {
+			for (float z = -0.5f; z <= 0.5f; z += 0.5f) {
+				float centerX = (sizeX * spacing) * 0.5f + (obstacleRadius * x);
+				float centerY = obstacleRadius;
+				float centerZ = (sizeZ * spacing) * 0.5f + +(obstacleRadius * z);
+				setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
+				glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
+				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+			}
+		}
 	}
 
 public:
