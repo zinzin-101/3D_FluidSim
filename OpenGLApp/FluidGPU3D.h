@@ -30,7 +30,7 @@ private:
 	virtual void integrate(float dt, float gravity) override {
 		integrateShader.use();
 		integrateShader.setFloat("dt", dt);
-		integrateShader.setFloat("gravity", gravity);
+		integrateShader.setVec3("gravity", gravity * glm::normalize(gravityDirection));
 
 		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
 		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
@@ -125,16 +125,23 @@ private:
 		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
 		glBindImageTexture(2, smokeTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
 
-		for (float x = -0.5f; x <= 0.5f; x += 0.5f) {
-			for (float z = -0.5f; z <= 0.5f; z += 0.5f) {
-				float centerX = (sizeX * spacing) * 0.5f + (obstacleRadius * x);
-				float centerY = obstacleRadius;
-				float centerZ = (sizeZ * spacing) * 0.5f + +(obstacleRadius * z);
-				setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
-				glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
-				glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-			}
-		}
+		//for (float x = -0.5f; x <= 0.5f; x += 0.5f) {
+		//	for (float z = -0.5f; z <= 0.5f; z += 0.5f) {
+		//		float centerX = (sizeX * spacing) * 0.5f + (obstacleRadius * x);
+		//		float centerY = obstacleRadius * 2.0f + spacing;
+		//		float centerZ = (sizeZ * spacing) * 0.5f + +(obstacleRadius * z);
+		//		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
+		//		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
+		//		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		//	}
+		//}
+
+		float centerX = (sizeX * spacing) * 0.5f;
+		float centerY = (sizeY * spacing) * 0.5f;
+		float centerZ = (sizeZ * spacing) * 0.5f;
+		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
+		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}
 
 	int findAbsMaxDimension(glm::vec3 v) {
@@ -158,6 +165,8 @@ private:
 	}
 
 public:
+	glm::vec3 gravityDirection;
+
 	FluidGPU3D(float density, int width, int height, int depth, float spacing, float obstacleRadius) :
 		Fluid(density, width, height, spacing, obstacleRadius, depth + BORDER_SIZE),
 		sizeZ(depth + BORDER_SIZE),
@@ -187,6 +196,8 @@ public:
 
 		setObstacleShader.use();
 		setObstacleShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
+
+		gravityDirection = glm::vec3(0.0f, 1.0f, 0.0f);
 
 		// velocity
 		glGenTextures(1, &velocityTexture);

@@ -11,7 +11,7 @@ layout(r32f, binding = 1)
 uniform image3D freeSpaceImage;
 
 uniform float dt;
-uniform float gravity;
+uniform vec3 gravity;
 uniform ivec3 gridSize;
 
 void main()
@@ -37,7 +37,9 @@ void main()
     // apply gravity
     if (currentSolid > 0.1 && belowSolid > 0.1)
     {
-        v += gravity * dt;
+        u += gravity.x * dt;
+        v += gravity.y * dt;
+        w += gravity.z * dt;
     }
 
     // write back updated velocity

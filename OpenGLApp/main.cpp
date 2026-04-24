@@ -77,9 +77,9 @@ int main() {
 	GLFWmonitor* primaryMonitor = glfwGetPrimaryMonitor();
 	const GLFWvidmode* mode = glfwGetVideoMode(primaryMonitor);
 	#ifdef FULLSCREEN
-	window = glfwCreateWindow(WIDTH, HEIGHT, "2D_FluidSim", primaryMonitor, NULL);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "3D_FluidSim", primaryMonitor, NULL);
 	#else
-	window = glfwCreateWindow(WIDTH, HEIGHT, "2D_FluidSim", NULL, NULL);
+	window = glfwCreateWindow(WIDTH, HEIGHT, "3D_FluidSim", NULL, NULL);
 	glfwSetWindowPos(window, (mode->width / 2) - (WIDTH / 2), (mode->height / 2) - (HEIGHT / 2));
 	#endif
 	if (window == NULL) {
@@ -194,7 +194,7 @@ int main() {
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 1000.0f);
 		glm::mat4 model(1.0f);
-		//model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		model = glm::scale(model, glm::vec3(2.0f));
 		//shader.setMat4("view", view);
 		//shader.setMat4("projection", projection);
 		//shader.setMat4("model", model);
@@ -293,13 +293,23 @@ void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		camera.ProcessKeyboard(DOWN, deltaTime);
 
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		z += 1;
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		z -= 1;
-	z = glm::clamp(z, 0, 127);
+	//if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	//	z += 1;
+	//if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	//	z -= 1;
+	//z = glm::clamp(z, 0, 127);
 	//std::cout << "z: " << z << std::endl;
-	std::cout << "campos: " << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << std::endl;
+	//std::cout << "campos: " << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << std::endl;
+
+	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+		fluidPtr->gravityDirection += camera.Up;
+	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+		fluidPtr->gravityDirection += -camera.Up;
+	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+		fluidPtr->gravityDirection += -camera.Right;
+	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+		fluidPtr->gravityDirection += camera.Right;
+	fluidPtr->gravityDirection = glm::normalize(fluidPtr->gravityDirection);
 }
 
 void toggleFullscreen(GLFWwindow* window) {
