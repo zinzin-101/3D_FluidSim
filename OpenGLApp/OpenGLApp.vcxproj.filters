@@ -42,5 +42,7 @@
   <ItemGroup>
     <None Include="smoke.vert" />
     <None Include="smoke.frag" />
+    <None Include="volume.vert" />
+    <None Include="volume.frag" />
   </ItemGroup>
 </Project>

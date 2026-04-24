@@ -150,6 +150,8 @@
   <ItemGroup>
     <None Include="smoke.frag" />
     <None Include="smoke.vert" />
+    <None Include="volume.frag" />
+    <None Include="volume.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

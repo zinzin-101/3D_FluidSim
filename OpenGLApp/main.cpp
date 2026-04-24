@@ -107,6 +107,7 @@ int main() {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+	//glDisable(GL_CULL_FACE);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 
@@ -193,13 +194,16 @@ int main() {
 		glm::mat4 view = camera.GetViewMatrix();
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)WIDTH / (float)HEIGHT, 0.1f, 1000.0f);
 		glm::mat4 model(1.0f);
-		model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
-		shader.setMat4("view", view);
-		shader.setMat4("projection", projection);
-		shader.setMat4("model", model);
-		glBindVertexArray(vao);
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		//model = glm::scale(model, glm::vec3(1.0f, 1.0f, 1.0f));
+		//shader.setMat4("view", view);
+		//shader.setMat4("projection", projection);
+		//shader.setMat4("model", model);
+		//glBindVertexArray(vao);
+		//glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 
+		glDisable(GL_DEPTH_TEST);
+		fluid.render(projection, view, model, camera);
+		glEnable(GL_DEPTH_TEST);
 
 		// show average FPS
 		static unsigned int frameNum = 0;
@@ -294,7 +298,8 @@ void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		z -= 1;
 	z = glm::clamp(z, 0, 127);
-	std::cout << "z: " << z << std::endl;
+	//std::cout << "z: " << z << std::endl;
+	std::cout << "campos: " << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << std::endl;
 }
 
 void toggleFullscreen(GLFWwindow* window) {
