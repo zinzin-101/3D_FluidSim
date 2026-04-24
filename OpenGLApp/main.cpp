@@ -170,7 +170,7 @@ int main() {
 		deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
 
-		fluidPtr->update(1.0f / 30.0f, 98.1f, 40);
+		fluidPtr->update(1.0f / 30.0f, 9.81f, 40);
 
 		// update
 		//if (isMouseDown) {
