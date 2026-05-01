@@ -5,8 +5,9 @@
 
 https://github.com/user-attachments/assets/d8b8334e-5686-4d34-9806-ffff6ddd266a
 
-
-Volumetric rendering using 3D Texture Slicing method
+Simulation running at 128x128x128 resolution </br >
+Volumetric rendering using 3D Texture Slicing method </br>
+GPU: NVidia Geforce RTX 4090 </br>
 
 ## References
 - Implementation referenced from [Matthias Müller - Ten Minute Physics](https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/17-fluidSim.html)
