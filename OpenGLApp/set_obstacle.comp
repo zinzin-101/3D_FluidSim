@@ -16,7 +16,7 @@ uniform vec3 vel;
 void main() {
     ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
 
-    if (any(greaterThanEqual(id, gridSize - 1)) || any(lessThan(id, ivec3(1)))) return;
+    if (any(greaterThanEqual(id, gridSize)) || any(lessThan(id, ivec3(0)))) return;
 
     if (isReset) {
         imageStore(freeSpaceImage, id, vec4(1.0));
@@ -28,7 +28,7 @@ void main() {
     if (dist < radius) {
         imageStore(freeSpaceImage, id, vec4(0.0));
         
-        imageStore(smokeImage, id, vec4(smokeColor));
+        imageStore(smokeImage, id, vec4(1.0, 0.0, 0.0, 1.0));
 
         imageStore(velocityImage, id, vec4(vel.x, vel.y, vel.z, 1.0));
 

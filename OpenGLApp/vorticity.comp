@@ -1,0 +1,72 @@
+#version 430 core
+
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+layout(rgba32f, binding = 0) uniform image3D velocityImage;
+layout(r32f, binding = 1) uniform image3D freeSpaceImage;
+
+uniform ivec3 gridSize;
+uniform float dt;
+
+uniform float vorticityStrength;
+
+vec3 loadVel(ivec3 id) {
+    id = clamp(id, ivec3(0), gridSize - 1);
+    return imageLoad(velocityImage, id).rgb;
+}
+
+vec3 curlAt(ivec3 id, float spacing) {
+    vec3 right = 0.5 * (loadVel(id + ivec3(1,0,0)) + loadVel(id + ivec3(2,0,0)));
+    vec3 left = 0.5 * (loadVel(id - ivec3(1,0,0)) + loadVel(id));
+    vec3 top = 0.5 * (loadVel(id + ivec3(0,1,0)) + loadVel(id + ivec3(0,2,0)));
+    vec3 bottom = 0.5 * (loadVel(id - ivec3(0,1,0)) + loadVel(id));
+    vec3 front = 0.5 * (loadVel(id + ivec3(0,0,1)) + loadVel(id + ivec3(0,0,2)));
+    vec3 back = 0.5 * (loadVel(id - ivec3(0,0,1)) + loadVel(id));
+
+    float invSpacing = 1.0 / (2.0 * spacing);
+
+    // curl = (dw/dy - dv/dz,  du/dz - dw/dx,  dv/dx - du/dy)
+    float wx = (top.z   - bottom.z - front.y  + back.y)  * invSpacing;
+    float wy = (front.x - back.x - right.z  + left.z)  * invSpacing;
+    float wz = (right.y - left.y - top.x + bottom.x) * invSpacing;
+
+    return vec3(wx, wy, wz);
+}
+
+void main() {
+    ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
+    if (any(greaterThanEqual(id, gridSize))) return;
+
+    float solid = imageLoad(freeSpaceImage, id).r;
+    if (solid < 0.1) return;
+
+    if (any(lessThan(id, ivec3(1))) || any(greaterThanEqual(id, gridSize - 1))) return;
+
+    float cellSpacing = 1.0;
+
+    float vorticityCenter = length(curlAt(id, cellSpacing));
+    float vorticityRight = length(curlAt(id + ivec3( 1,  0,  0), cellSpacing));
+    float vorticityLeft = length(curlAt(id + ivec3(-1,  0,  0), cellSpacing));
+    float vorticityTop = length(curlAt(id + ivec3( 0,  1,  0), cellSpacing));
+    float vorticityBottom = length(curlAt(id + ivec3( 0, -1,  0), cellSpacing));
+    float vorticityFront = length(curlAt(id + ivec3( 0,  0,  1), cellSpacing));
+    float vorticityBack = length(curlAt(id + ivec3( 0,  0, -1), cellSpacing));
+
+    vec3 vorticityGradient = vec3(
+        (vorticityRight - vorticityLeft),
+        (vorticityTop - vorticityBottom),
+        (vorticityFront - vorticityBack)
+    ) / (2.0 * cellSpacing);
+
+    float gradientMagnitude = length(vorticityGradient);
+
+    if (gradientMagnitude < 1e-6) return;
+
+    vec3 toVortexCore  = vorticityGradient / gradientMagnitude;
+    vec3 curlVec = curlAt(id, cellSpacing);
+    vec3 confinementForce  = vorticityStrength * cross(toVortexCore, curlVec);
+
+    vec4 velocity = imageLoad(velocityImage, id);
+    velocity.xyz += confinementForce * dt;
+    imageStore(velocityImage, id, velocity);
+}

@@ -10,6 +10,7 @@ private:
 	float obstacleZ;
 
 	ComputeShader integrateShader;
+	ComputeShader vorticityShader;
 	ComputeShader incompressibilityShader;
 	ComputeShader extrapolateShader;
 	ComputeShader advectVelocityShader;
@@ -32,6 +33,18 @@ private:
 		integrateShader.use();
 		integrateShader.setFloat("dt", dt);
 		integrateShader.setVec3("gravity", gravity * glm::normalize(gravityDirection));
+
+		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
+
+		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	}
+
+	void applyVorticity(float dt) {
+		vorticityShader.use();
+		vorticityShader.setFloat("dt", dt);
+		vorticityShader.setFloat("vorticityStrength", 8.0f);
 
 		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
 		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_ONLY, GL_R32F);
@@ -139,11 +152,11 @@ private:
 		//}
 
 		float centerX = (sizeX * spacing) * 0.5f;
-		float centerY = (sizeY * spacing) * 0.5f;
+		float centerY = obstacleRadius;
 		float centerZ = (sizeZ * spacing) * 0.5f;
 
 		obstacleX = centerX;
-		obstacleY = centerY;
+		obstacleY = obstacleRadius * 2.5f;
 		obstacleZ = centerZ;
 
 		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
@@ -178,6 +191,7 @@ public:
 		Fluid(density, width, height, spacing, obstacleRadius, depth + BORDER_SIZE),
 		sizeZ(depth + BORDER_SIZE),
 		integrateShader("integrate.comp"),
+		vorticityShader("vorticity.comp"),
 		incompressibilityShader("incompressibility.comp"),
 		extrapolateShader("extrapolate.comp"),
 		advectVelocityShader("advect_velocity.comp"),
@@ -188,6 +202,9 @@ public:
 	{
 		integrateShader.use();
 		integrateShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
+
+		vorticityShader.use();
+		vorticityShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
 
 		incompressibilityShader.use();
 		incompressibilityShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
@@ -264,7 +281,7 @@ public:
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
-		setInitialObstacle(1.0f / 60.0f, false);
+		setInitialObstacle(1.0f / 60.0f, true);
 
 		// rendering
 		volumeSlices.resize(MAX_NUMBER_OF_SLICES * 12);
@@ -282,6 +299,9 @@ public:
 	virtual void update(float dt, float gravity, int iterations) override {
 
 		integrate(dt, gravity);
+
+		applyVorticity(dt);
+
 		solveIncompressibility(dt, iterations);
 
 		extrapolate();
@@ -309,7 +329,7 @@ public:
 		setObstacleShader.setFloat("smokeColor", 1.0f);
 
 		float vx = 0.0f;
-		float vy = 0.0f;
+		float vy = 10.0f;
 		float vz = 0.0f;
 
 		if (!reset) {

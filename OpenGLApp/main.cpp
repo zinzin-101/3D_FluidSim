@@ -114,6 +114,7 @@ int main() {
 
 	FluidGPU3D fluid(DENSITY, 128, 128, 128, SPACING, OBSTACLE_RADIUS);
 	fluidPtr = &fluid;
+	//fluid.gravityDirection = glm::vec3(0.0f, -1.0, 0.0f);
 
 	currentFluidObstaclePos = fluid.getObstaclePosition();
 
@@ -173,7 +174,7 @@ int main() {
 		deltaTime = currentTime - lastTime;
 		lastTime = currentTime;
 
-		fluidPtr->update(1.0f / 30.0f, 9.81f, 40);
+		fluidPtr->update(1.0f / 60.0f, 9.81f, 40);
 
 		// update
 		//if (isMouseDown) {
@@ -323,7 +324,7 @@ void processInput(GLFWwindow* window) {
 		currentFluidObstaclePos.x -= obstacleMoveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 		currentFluidObstaclePos.x += obstacleMoveSpeed;
-	fluidPtr->setObstacle(1.0f / 60.0f, currentFluidObstaclePos, true);
+	//fluidPtr->setObstacle(1.0f / 60.0f, currentFluidObstaclePos, true);
 }
 
 void toggleFullscreen(GLFWwindow* window) {

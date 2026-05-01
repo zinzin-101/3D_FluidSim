@@ -50,12 +50,12 @@ void main() {
     p += pressureScaling * pressureCorrection;
     imageStore(pressureImage, id, vec4(p));
 
-    uLeft -= sLeft   * pressureCorrection;
-    uRight += sRight  * pressureCorrection;
+    uLeft -= sLeft * pressureCorrection;
+    uRight += sRight * pressureCorrection;
     vBottom -= sBottom * pressureCorrection;
-    vTop += sTop    * pressureCorrection;
-    wBack -= sBack   * pressureCorrection;
-    wFront += sFront  * pressureCorrection;
+    vTop += sTop * pressureCorrection;
+    wBack -= sBack * pressureCorrection;
+    wFront += sFront * pressureCorrection;
 
     imageStore(velocityImage, id, vec4(uLeft, vBottom, wBack, 1.0));
 
