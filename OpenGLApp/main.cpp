@@ -51,8 +51,6 @@ FluidGPU3D* fluidPtr = nullptr;
 bool isMouseDown = false;
 bool isRightMouseDown = false;
 bool showFreeSpace = false;
-int z = 64;
-glm::vec3 currentFluidObstaclePos = glm::vec3();
 
 
 // rendering
@@ -115,8 +113,6 @@ int main() {
 	FluidGPU3D fluid(DENSITY, 128, 128, 128, SPACING, OBSTACLE_RADIUS);
 	fluidPtr = &fluid;
 	//fluid.gravityDirection = glm::vec3(0.0f, -1.0, 0.0f);
-
-	currentFluidObstaclePos = fluid.getObstaclePosition();
 
 	// setup quad
 	float quadVertices[] = {
@@ -187,7 +183,7 @@ int main() {
 		//glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		get2DTextureSliceFrom3DTexture(sliceShader, z, fluid.getSizeX(), fluid.getSizeY(), fluid.getSizeZ(), fluid.getSmokeTexture(), smokeTexture);
+		//get2DTextureSliceFrom3DTexture(sliceShader, z, fluid.getSizeX(), fluid.getSizeY(), fluid.getSizeZ(), fluid.getSmokeTexture(), smokeTexture);
 
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, smokeTexture);
@@ -314,17 +310,6 @@ void processInput(GLFWwindow* window) {
 	//if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
 	//	fluidPtr->gravityDirection += camera.Right;
 	//fluidPtr->gravityDirection = glm::normalize(fluidPtr->gravityDirection);
-
-	float obstacleMoveSpeed = 2.5f;
-	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		currentFluidObstaclePos.z += obstacleMoveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		currentFluidObstaclePos.z -= obstacleMoveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		currentFluidObstaclePos.x -= obstacleMoveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		currentFluidObstaclePos.x += obstacleMoveSpeed;
-	//fluidPtr->setObstacle(1.0f / 60.0f, currentFluidObstaclePos, true);
 }
 
 void toggleFullscreen(GLFWwindow* window) {
