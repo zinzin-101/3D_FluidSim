@@ -125,7 +125,7 @@ private:
 		std::swap(smokeTexture, newSmokeTexture);
 	}
 
-	virtual void setInitialObstacle(float dt, bool reset) {
+	void setInitialObstacle(float dt, bool reset) {
 		setObstacleShader.use();
 
 		setObstacleShader.setFloat("radius", obstacleRadius);
@@ -311,7 +311,7 @@ public:
 		frameCount++;
 	}
 
-	virtual void setObstacle(float dt, float x, float y, bool reset) {
+	virtual void setObstacle(float dt, float x, float y, bool reset) override {
 		setObstacle(dt, x, sizeY / 2.0f, y, reset);
 	}
 
