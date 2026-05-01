@@ -11,6 +11,7 @@ uniform float spacing;
 uniform float smokeColor; 
 uniform bool isReset;     
 uniform ivec3 gridSize;
+uniform vec3 vel;
 
 void main() {
     ivec3 id = ivec3(gl_GlobalInvocationID.xyz);
@@ -29,18 +30,18 @@ void main() {
         
         imageStore(smokeImage, id, vec4(smokeColor));
 
-        imageStore(velocityImage, id, vec4(0.0, 0.0, 0.0, 1.0));
+        imageStore(velocityImage, id, vec4(vel.x, vel.y, vel.z, 1.0));
 
         vec4 velR = imageLoad(velocityImage, id + ivec3(1, 0, 0));
-        velR.r = 0.0;
+        velR.r = vel.x;
         imageStore(velocityImage, id + ivec3(1, 0, 0), velR);
 
         vec4 velT = imageLoad(velocityImage, id + ivec3(0, 1, 0));
-        velT.g = 0.0;
+        velT.g = vel.y;
         imageStore(velocityImage, id + ivec3(0, 1, 0), velT);
 
         vec4 velF = imageLoad(velocityImage, id + ivec3(0, 0, 1));
-        velF.b = 0.0;
+        velF.b = vel.z;
         imageStore(velocityImage, id + ivec3(0, 0, 1), velF);
     }
 }

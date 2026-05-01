@@ -7,6 +7,7 @@
 class FluidGPU3D : public Fluid {
 private:
 	int sizeZ;
+	float obstacleZ;
 
 	ComputeShader integrateShader;
 	ComputeShader incompressibilityShader;
@@ -119,6 +120,7 @@ private:
 		setObstacleShader.setBool("isReset", reset);
 		setObstacleShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
 		setObstacleShader.setFloat("smokeColor", 1.0f);
+		setObstacleShader.setVec3("vel", glm::vec3(0.0f, -9.81f, 0.0f));
 
 		// Bind 3D Textures
 		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
@@ -139,6 +141,11 @@ private:
 		float centerX = (sizeX * spacing) * 0.5f;
 		float centerY = (sizeY * spacing) * 0.5f;
 		float centerZ = (sizeZ * spacing) * 0.5f;
+
+		obstacleX = centerX;
+		obstacleY = centerY;
+		obstacleZ = centerZ;
+
 		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
 		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -284,6 +291,63 @@ public:
 		frameCount++;
 	}
 
+	virtual void setObstacle(float dt, float x, float y, bool reset) {
+		setObstacle(dt, x, sizeY / 2.0f, y, reset);
+	}
+
+	void setObstacle(float dt, glm::vec3 position, bool reset) {
+		setObstacle(dt, position.x, position.y, position.z, reset);
+	}
+
+	void setObstacle(float dt, float x, float y, float z, bool reset) {
+		setObstacleShader.use();
+
+		setObstacleShader.setFloat("radius", obstacleRadius);
+		setObstacleShader.setFloat("spacing", spacing);
+		setObstacleShader.setBool("isReset", reset);
+		setObstacleShader.setIVec3("gridSize", sizeX, sizeY, sizeZ);
+		setObstacleShader.setFloat("smokeColor", 1.0f);
+
+		float vx = 0.0f;
+		float vy = 0.0f;
+		float vz = 0.0f;
+
+		if (!reset) {
+			vx = (x - obstacleX) / dt;
+			vy = (y - obstacleY) / dt;
+			vz = (z - obstacleZ) / dt;
+		}
+
+		obstacleX = x;
+		obstacleY = y;
+		obstacleZ = z;
+
+		setObstacleShader.setVec3("vel", glm::vec3(vx, vy, vz));
+
+		// Bind 3D Textures
+		glBindImageTexture(0, velocityTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32F);
+		glBindImageTexture(1, freeSpaceTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
+		glBindImageTexture(2, smokeTexture, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
+
+		//for (float x = -0.5f; x <= 0.5f; x += 0.5f) {
+		//	for (float z = -0.5f; z <= 0.5f; z += 0.5f) {
+		//		float centerX = (sizeX * spacing) * 0.5f + (obstacleRadius * x);
+		//		float centerY = obstacleRadius * 2.0f + spacing;
+		//		float centerZ = (sizeZ * spacing) * 0.5f + +(obstacleRadius * z);
+		//		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
+		//		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
+		//		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		//	}
+		//}
+
+		float centerX = obstacleX;
+		float centerY = obstacleY;
+		float centerZ = obstacleZ;
+		setObstacleShader.setVec3("obstaclePos", centerX, centerY, centerZ);
+		glDispatchCompute((sizeX + 7) / 8, (sizeY + 7) / 8, (sizeZ + 7) / 8);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	}
+
 	unsigned int getSmokeTexture() const {
 		return smokeTexture;
 	}
@@ -298,6 +362,14 @@ public:
 
 	int getSizeZ() const {
 		return sizeZ;
+	}
+
+	glm::vec3 getObstaclePosition() const {
+		return glm::vec3(
+			obstacleX,
+			obstacleY,
+			obstacleZ
+		);
 	}
 
 	void render(glm::mat4 projection, glm::mat4 view, glm::mat4 model, const Camera& camera, int sliceCount = 128) {

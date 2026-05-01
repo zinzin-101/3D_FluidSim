@@ -52,6 +52,7 @@ bool isMouseDown = false;
 bool isRightMouseDown = false;
 bool showFreeSpace = false;
 int z = 64;
+glm::vec3 currentFluidObstaclePos = glm::vec3();
 
 
 // rendering
@@ -113,6 +114,8 @@ int main() {
 
 	FluidGPU3D fluid(DENSITY, 128, 128, 128, SPACING, OBSTACLE_RADIUS);
 	fluidPtr = &fluid;
+
+	currentFluidObstaclePos = fluid.getObstaclePosition();
 
 	// setup quad
 	float quadVertices[] = {
@@ -301,15 +304,26 @@ void processInput(GLFWwindow* window) {
 	//std::cout << "z: " << z << std::endl;
 	//std::cout << "campos: " << camera.Position.x << ", " << camera.Position.y << ", " << camera.Position.z << std::endl;
 
+	//if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+	//	fluidPtr->gravityDirection += camera.Up;
+	//if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+	//	fluidPtr->gravityDirection += -camera.Up;
+	//if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+	//	fluidPtr->gravityDirection += -camera.Right;
+	//if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+	//	fluidPtr->gravityDirection += camera.Right;
+	//fluidPtr->gravityDirection = glm::normalize(fluidPtr->gravityDirection);
+
+	float obstacleMoveSpeed = 2.5f;
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		fluidPtr->gravityDirection += camera.Up;
+		currentFluidObstaclePos.z += obstacleMoveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		fluidPtr->gravityDirection += -camera.Up;
+		currentFluidObstaclePos.z -= obstacleMoveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		fluidPtr->gravityDirection += -camera.Right;
+		currentFluidObstaclePos.x -= obstacleMoveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		fluidPtr->gravityDirection += camera.Right;
-	fluidPtr->gravityDirection = glm::normalize(fluidPtr->gravityDirection);
+		currentFluidObstaclePos.x += obstacleMoveSpeed;
+	fluidPtr->setObstacle(1.0f / 60.0f, currentFluidObstaclePos, true);
 }
 
 void toggleFullscreen(GLFWwindow* window) {
