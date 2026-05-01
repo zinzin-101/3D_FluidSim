@@ -1,16 +1,14 @@
-# 2D Eulerian Fluid Simulation speed up using compute shader
+# 3D Eulerian Fluid Simulation
 
-## Simulate using GPU
+## Simulate using GPU (compute shader)
 
-https://github.com/user-attachments/assets/3a15b727-8c61-4d53-8499-b1f1daa441f5
 
-Speed up + increased simulation resolution
+https://github.com/user-attachments/assets/d8b8334e-5686-4d34-9806-ffff6ddd266a
 
-## Simulate using CPU
-
-https://github.com/user-attachments/assets/443b64b3-3dfc-4f0b-b583-f8a165b45bd8
-
-Low simulation resolution, high performance hit at high resolution
+Simulation running at 128x128x128 resolution </br >
+Volume rendering using 3D Texture Slicing method </br>
+GPU: Nvidia Geforce RTX 4090 </br>
 
 ## References
-- Implementation referenced from [Matthias Müller - Ten Minute Physics](https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/17-fluidSim.html)
+- Fluid simulation implementation referenced from [Matthias Müller - Ten Minute Physics](https://github.com/matthias-research/pages/blob/master/tenMinutePhysics/17-fluidSim.html) </br>
+- 3D Texture Slicing implementation referenced from OpenGL Development Cookbook 2013 by Muhammad Mobeen Movania (Chapter 7)
